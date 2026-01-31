@@ -1,34 +1,18 @@
-const dotenv = require('dotenv');
-const express = require('express');
-const app = express();
+
+const ImageKit = require('imagekit')
+
+
 const cors = require('cors')
 const fs = require('fs')
 const axios = require('axios')
 const multer = require('multer')
 const FormData = require('form-data')
 const path = require('path')
-const ImageKit = require('imagekit')
-const cookieParser = require('cookie-parser')
-const connectedToDB = require('./config/db')
 
 const imageModel = require('./models/image.model')
-connectedToDB()
-
 
 const uploadDir = path.join(__dirname, "./uploads");
 dotenv.config()
-
-const PORT = process.env.PORT || 3000
-
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true,
-}))
-
-
-app.get('/', (req, res) => {
-  res.send("server is running")
-})
 
 
 const imageKit = new ImageKit({
@@ -70,9 +54,9 @@ app.post("/upload", upload.single("image"), async (req, res) => {
     });
 
     const imageDoc = await imageModel.create({
-      url : uploadResult.url,
-      fileId : uploadResult.fileId,
-      folder : uploadResult.filePath,
+      url: uploadResult.url,
+      fileId: uploadResult.fileId,
+      folder: uploadResult.filePath,
     })
 
     const outputName = `bg-${Date.now()}.png`;
@@ -109,7 +93,3 @@ app.get("/images", (req, res) => {
     return res.status(500).json({ message: "Failed to load images" });
   }
 });
-
-app.listen(PORT, () => {
-  console.log(`server is running in the port : ${PORT}`)
-}) 
