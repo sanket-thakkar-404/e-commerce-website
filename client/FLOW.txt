@@ -1,0 +1,368 @@
+================================================================================
+                    SHOP E-COMMERCE - PURA FLOW AUR DATA DETAIL
+================================================================================
+Yeh file batati hai: data kahan se aa raha hai, kaunsi file/folder use ho rahi hai,
+result kahan ja raha hai, kya aaya kya gaya - sab step-by-step.
+
+================================================================================
+PART 1: APP START HOTE HI KAISE CHALTA HAI (Initial Load Flow)
+================================================================================
+
+STEP 1: Browser index.html open karta hai
+   File: index.html
+   Kya hota hai: HTML load, andar <div id="root"> empty rehta hai.
+   Result: Page blank, sirf root div ready.
+
+STEP 2: main.jsx run hota hai (entry point)
+   File: src/main.jsx
+   Folder: src/
+   Kya karta hai:
+     - createRoot(document.getElementById("root")) -> React root "root" div pe attach
+     - import index.css -> global styles load
+     - import App.jsx -> App component load
+     - BrowserRouter wrap -> URL change pe React Router react kare
+     - ProductContext wrap -> abhi sirf children pass (future context ke liye)
+     - render(<App />) -> App component render
+   Data: Koi data nahi, sirf structure.
+   Result: App component screen pe aata hai, routing ready.
+
+STEP 3: App.jsx render hota hai
+   File: src/App.jsx
+   Kya karta hai: Routes define. URL dekhta hai, us hisaab se konsa component dikhana hai decide karta hai.
+   Example: URL "/" hai to -> AppLayout render (kyunki path="/" element={<AppLayout />})
+   Result: AppLayout + uske andar wala child route (index = Home) render hone ko ready.
+
+STEP 4: AppLayout render hota hai
+   File: src/layout/AppLayout.jsx
+   Folder: src/layout/
+   Kya karta hai:
+     - Navbar component dikhata hai (src/components/Navbar.jsx)
+     - <Outlet /> = jo bhi child route hai (e.g. Home) woh yahan render hota hai
+   Data in: Route se child component (e.g. Home) automatically Outlet me aata hai.
+   Result: Screen pe Navbar + Home page content dikhta hai.
+
+STEP 5: Home page render hota hai
+   File: src/pages/Home.jsx
+   Folder: src/pages/
+   Data AA RAHA HAIN KAHAN SE:
+     - src/config/productsData.js -> allCategoriesProducts (sare products array)
+   Kaunsi file use ho rahi hai:
+     - src/components/CollectionLayout.jsx (products pass karke)
+     - CollectionLayout andar ProductCard use karta hai (src/components/ProductCard.jsx)
+   Data flow: productsData.allCategoriesProducts -> Home -> CollectionLayout -> ProductCard (har product ek card)
+   Result: Screen pe sidebar (sort/filter) + product grid. User ko products dikhte hain.
+
+--------------------------------------------------------------------------------
+SUMMARY - Load flow:
+  index.html -> main.jsx -> App.jsx -> AppLayout.jsx -> Navbar + Outlet(Home)
+  -> Home.jsx -> CollectionLayout -> ProductCard (products = config/productsData)
+--------------------------------------------------------------------------------
+
+================================================================================
+PART 2: ROUTE SE FILE MAPPING (URL -> Konsi file chal rahi hai)
+================================================================================
+
+URL                    | Layout    | Page/Component (file)           | Folder
+------------------------|-----------|----------------------------------|----------
+/                       | AppLayout | Home                            | pages/Home.jsx
+/categories             | AppLayout | Categories (index view)          | pages/Categories.jsx
+/categories/men         | AppLayout | Categories + MenCollection       | components/MenCollection.jsx
+/categories/women       | AppLayout | Categories + WomenCollection     | components/WomenCollection.jsx
+/categories/leather-bags| AppLayout | Categories + LeatherBagCollection| components/LeatherBagCollection.jsx
+/cart                   | AppLayout | Cart                             | pages/Cart.jsx
+/checkout               | AppLayout | Checkout                         | pages/Checkout.jsx
+/order-confirmed        | AppLayout | OrderConfirmed                   | pages/OrderConfirmed.jsx
+/track-order            | AppLayout | TrackOrder                       | pages/TrackOrder.jsx
+/wishlist               | AppLayout | WishList                         | pages/WishList.jsx
+/profile                | AppLayout | Profile                          | pages/Profile.jsx
+/personal-details       | AppLayout | PersonalDetails                  | pages/PersonalDetails.jsx
+/addresses              | AppLayout | Addresses                        | pages/Addresses.jsx
+/coupons                | AppLayout | Coupons                          | pages/Coupons.jsx
+/product/123            | AppLayout | ProductDetails (id=123)          | pages/ProductDetails.jsx
+/login                  | NO layout| Login                             | pages/Login.jsx
+/signup                 | NO layout| Signup                            | pages/Signup.jsx
+/logout                 | NO layout| Logout                            | pages/Logout.jsx
+koi bhi galat URL       | -         | Redirect to /                    | App.jsx (Navigate to="/")
+
+================================================================================
+PART 3: DATA KAHAN SE AA RAHA HAI (Data Sources - Kon kis file se data leta hai)
+================================================================================
+
+CONFIG FOLDER (src/config/) - Static data, koi state nahi
+--------------------------------------------------------------------------------
+  productsData.js
+    Use hota hai: Home, Categories, MenCollection, WomenCollection, LeatherBagCollection, ProductDetails, WishList (indirect)
+    Data: products, menClothes, womenClothes, allCategoriesProducts, getProductById(id)
+    Kaun read karta hai: Home (allCategoriesProducts), MenCollection (menClothes), WomenCollection (womenClothes),
+                         LeatherBagCollection (products), Categories (allCategoriesProducts), ProductDetails (getProductById)
+
+  productDetailsData.js
+    Use hota hai: ProductDetails only
+    Data: getProductDetails(productId, category) -> description, fabric, colors, sizes, rating, reviews
+    Kaun read karta hai: ProductDetails.jsx
+
+  navbarConfig.js
+    Use hota hai: Navbar (optional / dropdown) - ab Navbar simple links use karti hai
+    Data: categories, mobileMenu (label + path)
+
+  couponsConfig.js
+    Use hota hai: Coupons page only
+    Data: AVAILABLE_COUPONS array (sab coupons display ke liye)
+    Kaun read karta hai: pages/Coupons.jsx
+
+STORE FOLDER (src/store/) - State, components isse read/write karte hain
+--------------------------------------------------------------------------------
+  useCartStore.js
+    Data rakhta hai: items (cart list), appliedCoupon, couponError
+    KAUN LIKHTA HAI (data bhejta hai): ProductCard (addToCart), ProductDetails (addToCart), Cart (updateQuantity, removeFromCart, applyCoupon, removeCoupon), Checkout (clearCart)
+    KAUN PADHTA HAI (data leta hai): Cart.jsx, Checkout.jsx, ProductCard.jsx, ProductDetails.jsx
+    Result kahan jaata hai: Cart page pe list + total; Checkout pe order summary; Place Order pe cart clear + order localStorage me
+
+  useWishlistStore.js
+    Data rakhta hai: items (wishlist list)
+    KAUN LIKHTA HAI: ProductCard (toggleWishlist), ProductDetails (toggleWishlist), WishList page (removeFromWishlist)
+    KAUN PADHTA HAI: ProductCard (isInWishlist, heart fill/empty), ProductDetails (wishlist button), WishList.jsx (list dikhane)
+    Result kahan jaata hai: Wishlist page pe saved items; heart icon state
+
+  useProfileStore.js (persist = localStorage key "shop-profile")
+    Data rakhta hai: user (name, email, phone, joinDate), addresses (array)
+    KAUN LIKHTA HAI: PersonalDetails (updateUser), Addresses (addAddress, updateAddress, removeAddress, setDefaultAddress)
+    KAUN PADHTA HAI: Profile.jsx (user, addresses count), PersonalDetails (user prefilled), Addresses (addresses list)
+    Result kahan jaata hai: localStorage me save; Profile pe name/email/count; PersonalDetails form me; Addresses list me
+
+================================================================================
+PART 4: USER ACTION FLOW - Step by step kya aaya kya gaya
+================================================================================
+
+FLOW A: User ne product pe "Add to Cart" click kiya (Home/Categories/Product card se)
+--------------------------------------------------------------------------------
+  1. User: Product card pe + button click
+  2. File: src/components/ProductCard.jsx
+     - useCartStore.getState().addToCart(product) call hota hai
+  3. File: src/store/useCartStore.js
+     - addToCart(product): items array me naya item push (productId, name, price, image, quantity)
+     - Result: Cart store me 1 item add ho gaya
+  4. Koi page redirect nahi; same page pe hi rehte hain. Cart me data save ho chuka.
+
+FLOW B: User ne product name/image pe click kiya -> Product Details page
+--------------------------------------------------------------------------------
+  1. User: Card pe product name ya image click
+  2. File: src/components/ProductCard.jsx
+     - <Link to={`/product/${id}`}> -> React Router URL change karta hai to /product/101 (example)
+  3. File: src/App.jsx
+     - Route path="product/:id" match -> ProductDetails render
+  4. File: src/pages/ProductDetails.jsx
+     - useParams() -> id = 101 (URL se)
+     - getProductById(101) -> src/config/productsData.js se product object (name, price, image, etc.)
+     - getProductDetails(101, category) -> src/config/productDetailsData.js se description, fabric, colors, sizes, rating, reviews
+     - Result: Screen pe product detail + Add to Cart / Buy Now / Wishlist
+  5. Data: productsData + productDetailsData -> ProductDetails -> screen pe dikha
+
+FLOW C: User ne "Add to Cart" Product Details page se (quantity 2)
+--------------------------------------------------------------------------------
+  1. User: Quantity 2 select karke "Add to Cart" click
+  2. File: src/pages/ProductDetails.jsx
+     - addToCart(product, quantity) -> useCartStore
+  3. File: src/store/useCartStore.js
+     - addToCart(product, 2): agar product pehle se hai to quantity +2, nahi to naya item quantity 2 ke sath
+  4. Result: Cart store me item add/update. Page same rehta hai.
+
+FLOW D: User ne "Buy Now" click kiya
+--------------------------------------------------------------------------------
+  1. User: ProductDetails pe "Buy Now"
+  2. File: src/pages/ProductDetails.jsx
+     - addToCart(product, quantity) -> cart me add
+     - navigate("/checkout") -> URL /checkout
+  3. File: src/App.jsx -> Route checkout -> Checkout.jsx
+  4. File: src/pages/Checkout.jsx
+     - useCartStore se items, getSubtotal, getDeliveryFee, getPlatformFee, getCouponDiscount, getTotal
+     - Result: Payment methods + order summary dikhta hai
+  5. Data flow: Cart store -> Checkout page -> screen pe order summary
+
+FLOW E: User Cart page pe gaya, coupon apply kiya
+--------------------------------------------------------------------------------
+  1. User: Navbar se "Cart" click -> URL /cart
+  2. File: src/pages/Cart.jsx
+     - useCartStore se items, getSubtotal, getDeliveryFee, getPlatformFee, getCouponDiscount, getTotal, applyCoupon, removeCoupon
+     - Data: Cart store se items + charges. Subtotal >= 500 pe "Apply Coupon" section dikhta hai
+  3. User: Coupon code "FREEDEL" type karke Apply click
+  4. File: src/store/useCartStore.js
+     - applyCoupon("FREEDEL"): COUPONS me dhundha, minOrder check, appliedCoupon set
+     - getDeliveryFee() ab 0 return karega (free_delivery type)
+  5. Result: Cart page pe Total update (delivery 0), "FREEDEL applied" dikhega
+
+FLOW F: User ne "Proceed to Payment" click kiya (Cart se)
+--------------------------------------------------------------------------------
+  1. User: Cart page pe "Proceed to Payment" click
+  2. File: src/pages/Cart.jsx
+     - <Link to="/checkout"> -> URL /checkout
+  3. File: src/pages/Checkout.jsx
+     - useCartStore se items, getSubtotal, getDeliveryFee, getPlatformFee, getCouponDiscount, getTotal, appliedCoupon, clearCart
+     - Payment method select (COD, Card, UPI, etc.)
+  4. User: "Place Order" click
+  5. File: src/pages/Checkout.jsx
+     - handlePlaceOrder: orderId generate, localStorage.setItem("shop_recent_order", { orderId, total, date }), clearCart(), navigate("/order-confirmed", { state: { orderId, total } })
+  6. File: src/store/useCartStore.js
+     - clearCart(): items = [], appliedCoupon = null
+  7. Result: Cart khali; URL /order-confirmed; OrderConfirmed page dikhega with orderId + total
+
+FLOW G: Order Confirmed -> Track Order
+--------------------------------------------------------------------------------
+  1. User: Order Confirmed page pe "Track Order" click
+  2. File: src/pages/OrderConfirmed.jsx
+     - <Link to="/track-order"> -> URL /track-order
+  3. File: src/pages/TrackOrder.jsx
+     - getOrderFromStorage() -> localStorage "shop_recent_order" se orderId, total, date
+     - Result: "Your recent order" + Order ID dikhega, Track button se timeline (Order Placed -> Delivered) dikhegi
+  4. Data: localStorage -> TrackOrder page -> screen pe timeline
+
+FLOW H: Wishlist - Add / Remove / Page
+--------------------------------------------------------------------------------
+  1. User: Product card pe heart click
+  2. File: src/components/ProductCard.jsx
+     - useWishlistStore.toggleWishlist(product) -> addToWishlist ya removeFromWishlist
+  3. File: src/store/useWishlistStore.js
+     - items me product add ya remove
+  4. Result: Heart fill/empty; Wishlist page pe jaoge to woh item list me hoga ya nahi
+
+  5. User: Navbar se "Wishlist" (ya Profile -> Wishlist) -> URL /wishlist
+  6. File: src/pages/WishList.jsx
+     - useWishlistStore se items, removeFromWishlist; useCartStore se addToCart
+     - Result: Saved items grid; "Add to Cart" se cart me add; delete se wishlist se remove
+  7. Data: useWishlistStore.items -> WishList page -> cards
+
+FLOW I: Profile -> Personal Details -> Save
+--------------------------------------------------------------------------------
+  1. User: Profile -> "Personal Information" click -> URL /personal-details
+  2. File: src/pages/PersonalDetails.jsx
+     - useProfileStore se user, updateUser
+     - user se name, email, phone form me prefilled (useEffect)
+  3. User: Name/email/phone edit karke "Save Changes" click
+  4. File: src/store/useProfileStore.js
+     - updateUser({ name, email, phone }) -> state.user update
+     - persist -> localStorage "shop-profile" me save
+  5. Result: Profile page pe wapas jaoge to updated name/email dikhega (Profile useProfileStore se user leta hai)
+
+FLOW J: Profile -> Addresses -> Add / Edit / Delete
+--------------------------------------------------------------------------------
+  1. User: Profile -> "Addresses" -> URL /addresses
+  2. File: src/pages/Addresses.jsx
+     - useProfileStore se addresses, addAddress, updateAddress, removeAddress, setDefaultAddress
+     - Data: addresses array config/store se (default 1 address)
+  3. User: "Add Address" click -> modal form open -> fill karke "Save Address"
+  4. File: src/store/useProfileStore.js
+     - addAddress({ name, phone, addressLine1, ... }) -> addresses me naya object push, id = "addr-" + timestamp, isDefault = first wala
+     - persist -> localStorage me save
+  5. Result: List me naya address dikhega. Edit/Delete/Set default bhi store methods se; result same list + localStorage.
+
+FLOW K: Coupons page -> Copy code -> Cart pe apply
+--------------------------------------------------------------------------------
+  1. User: Profile -> "Coupons" -> URL /coupons
+  2. File: src/pages/Coupons.jsx
+     - config/couponsConfig.js se AVAILABLE_COUPONS import
+     - Result: Saare coupons list (code, discount text, validity, terms) + Copy button
+  3. User: "Copy" click -> navigator.clipboard.writeText(code) -> code copy ho gaya
+  4. User: Cart pe jao -> Apply coupon me paste karke Apply -> useCartStore.applyCoupon(code) (Flow E jaisa)
+  5. Data: couponsConfig (display) -> Coupons page; apply logic Cart store me (useCartStore COUPONS)
+
+================================================================================
+PART 5: FOLDER USE - Kon kis folder ki files use karta hai
+================================================================================
+
+  pages/ (screens)
+    -> components/ (Navbar, ProductCard, CollectionLayout, etc.)
+    -> config/ (productsData, productDetailsData, couponsConfig)
+    -> store/ (useCartStore, useWishlistStore, useProfileStore)
+    -> layout/ (AppLayout - sirf App.jsx use karta hai)
+
+  components/
+    -> store/ (ProductCard: cart + wishlist; CollectionLayout: nahi, sirf props)
+    -> config/ (CollectionLayout nahi; MenCollection/WomenCollection/LeatherBagCollection productsData)
+
+  layout/
+    -> components/ (AppLayout sirf Navbar use karta hai)
+
+  App.jsx
+    -> layout/AppLayout
+    -> pages/ (sab route pages)
+    -> components/ (MenCollection, WomenCollection, LeatherBagCollection)
+
+  main.jsx
+    -> content/ProductContext
+    -> App.jsx
+    -> index.css
+
+================================================================================
+PART 6: RESULT KAHAN JA RAHA HAI - Short summary
+================================================================================
+
+  Cart add          -> useCartStore.items (memory) -> Cart page / Checkout page pe dikhta hai
+  Wishlist add      -> useWishlistStore.items (memory) -> Wishlist page + heart icon state
+  Profile/Address   -> useProfileStore (memory + localStorage "shop-profile") -> Profile, PersonalDetails, Addresses
+  Place Order       -> clearCart; order -> localStorage "shop_recent_order" -> OrderConfirmed page + TrackOrder page
+  Coupon apply      -> useCartStore.appliedCoupon -> Cart/Checkout total me discount reflect
+  Product data     -> config files (productsData, productDetailsData) -> koi save nahi, sirf read; dikhane tak
+
+================================================================================
+PART 7: FILE DEPENDENCY TREE (Kaun kaun ko import karta hai)
+================================================================================
+
+  main.jsx
+    -> App.jsx, index.css, ProductContext.jsx
+
+  App.jsx
+    -> AppLayout.jsx, Home, Categories, Cart, Checkout, OrderConfirmed, TrackOrder, WishList, Profile,
+       PersonalDetails, Addresses, Coupons, ProductDetails, Login, Signup, Logout,
+       MenCollection, WomenCollection, LeatherBagCollection
+
+  AppLayout.jsx
+    -> Navbar.jsx, Outlet (react-router-dom)
+
+  Home.jsx
+    -> CollectionLayout.jsx, productsData.js (allCategoriesProducts)
+
+  Categories.jsx
+    -> CollectionLayout.jsx, productsData.js (allCategoriesProducts), CATEGORY_PAGE_FILTERS from CollectionLayout
+
+  MenCollection.jsx / WomenCollection.jsx / LeatherBagCollection.jsx
+    -> CollectionLayout.jsx, productsData.js (menClothes / womenClothes / products)
+
+  CollectionLayout.jsx
+    -> ProductCard.jsx
+
+  ProductCard.jsx
+    -> useCartStore.js, useWishlistStore.js, Link (react-router-dom)
+
+  Cart.jsx
+    -> useCartStore.js, Link
+
+  Checkout.jsx
+    -> useCartStore.js, useNavigate, Link
+
+  OrderConfirmed.jsx
+    -> useLocation (state: orderId, total), Link
+
+  TrackOrder.jsx
+    -> localStorage (shop_recent_order), Link
+
+  WishList.jsx
+    -> useWishlistStore.js, useCartStore.js, Link
+
+  ProductDetails.jsx
+    -> productsData.js (getProductById), productDetailsData.js (getProductDetails), useCartStore, useWishlistStore
+
+  Profile.jsx
+    -> useProfileStore.js, Link
+
+  PersonalDetails.jsx
+    -> useProfileStore.js, Link
+
+  Addresses.jsx
+    -> useProfileStore.js, Link
+
+  Coupons.jsx
+    -> couponsConfig.js (AVAILABLE_COUPONS), Link
+
+================================================================================
+END - Is file me sab flow, data ka source/destination, aur file/folder use detail me diya gaya hai.
+================================================================================
