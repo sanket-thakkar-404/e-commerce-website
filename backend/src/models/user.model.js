@@ -22,31 +22,18 @@ const userSchema = new mongoose.Schema({
     required: true
   },
 
-  verificationCode: String,
-  verificationCodeExpiry: Date,
-
-  isVerified: {
-    type: Boolean,
-    default: false
-  },
-
-  resendCount: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5,
-  },
-
   isAdmin: {
     type: Boolean,
     default: false
   },
 
-  lastResendAt: Date,
-
   contact: {
     type: String,
     required: true
+  },
+  address : {
+    type : Array,
+    default : []
   },
 
   orders: [{
