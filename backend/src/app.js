@@ -8,6 +8,7 @@ const productRoutes = require('./routes/product.routes')
 const orderRoutes = require('./routes/orders.routes')
 const ownerRoutes = require('./routes/owner.routes')
 const wishlistRoutes = require('./routes/wishlist.routes')
+const authRoutes = require('./routes/auth.routes');
 
 app.use(cookieParser())
 app.use(express.urlencoded({ extended: true }))
@@ -18,7 +19,7 @@ app.get('/', (req, res) => {
 })
 
 
-
+app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes);
 app.use('/api/owners', ownerRoutes);
 app.use('/api/products', productRoutes);

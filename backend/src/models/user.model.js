@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 
 
 const userSchema = new mongoose.Schema({
-  fullName: {
+  fullname: {
     type: String,
     required: true,
     minLength: 3,
@@ -22,25 +22,17 @@ const userSchema = new mongoose.Schema({
     required: true
   },
 
-  isAdmin: {
-    type: Boolean,
-    default: false
-  },
-
   contact: {
     type: String,
-    required: true
   },
   address : {
     type : Array,
     default : []
   },
-
   orders: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Order"
   }],
-
   cart: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product"
@@ -53,7 +45,7 @@ const userSchema = new mongoose.Schema({
 
   profilePic: {
     type: String,
-    default: "/avatar.png"
+    default: ""
   }
 },
   { timestamps: true }
